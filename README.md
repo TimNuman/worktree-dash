@@ -8,7 +8,7 @@ Each repo can declare extra background processes (watchers like `npx tsc --watch
 
 Dev servers are discovered live via `lsof` — node processes listening on a dev port, matched to worktrees by working directory. No state files. Servers whose worktree has been deleted are killed automatically.
 
-Zero dependencies. macOS (relies on `lsof`).
+Zero dependencies. Process discovery auto-detects the OS: `lsof` on macOS, `ss` + `/proc` on Linux.
 
 ## Install
 

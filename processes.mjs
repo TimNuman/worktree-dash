@@ -1,7 +1,10 @@
-import { execFileSync, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
+import { cwdOf, killTree, psSnapshot } from "./platform.mjs";
+
+export { psSnapshot };
 
 const LOG_DIR = path.join(homedir(), ".cache", "worktree-dash", "logs");
 const registry = new Map();
@@ -40,23 +43,6 @@ function alive(pid) {
     return true;
   } catch {
     return false;
-  }
-}
-
-function cwdOf(pid) {
-  try {
-    const out = execFileSync("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], { encoding: "utf8" });
-    return out.split("\n").find((l) => l.startsWith("n"))?.slice(1) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export function psSnapshot() {
-  try {
-    return execFileSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" });
-  } catch {
-    return "";
   }
 }
 
@@ -123,12 +109,6 @@ export function runAction(repo, worktreePath, action) {
 export function stopProcess(repo, worktreePath, proc) {
   const pid = findPid(repo, worktreePath, proc);
   if (!pid) return;
-  try {
-    process.kill(-pid);
-  } catch {
-    try {
-      process.kill(pid);
-    } catch {}
-  }
+  killTree(pid);
   registry.delete(registryKey(worktreePath, proc.name));
 }

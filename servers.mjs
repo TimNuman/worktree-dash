@@ -1,38 +1,10 @@
-import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, symlinkSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { copyFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { killTree, nodeListeners, portInUse, symlinkDir } from "./platform.mjs";
 import { openLog } from "./processes.mjs";
 
-export function nodeListeners() {
-  let out = "";
-  try {
-    out = execFileSync("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN", "-a", "-c", "node", "-Fpn"], { encoding: "utf8" });
-  } catch {
-    return [];
-  }
-  const portsByPid = new Map();
-  let pid = null;
-  for (const line of out.split("\n")) {
-    if (line.startsWith("p")) {
-      pid = Number(line.slice(1));
-      if (!portsByPid.has(pid)) portsByPid.set(pid, new Set());
-    } else if (line.startsWith("n") && pid !== null) {
-      const port = Number(line.slice(line.lastIndexOf(":") + 1));
-      if (Number.isFinite(port)) portsByPid.get(pid).add(port);
-    }
-  }
-  const listeners = [];
-  for (const [listenerPid, ports] of portsByPid) {
-    if (listenerPid === process.pid) continue;
-    let cwd = null;
-    try {
-      const out = execFileSync("lsof", ["-a", "-p", String(listenerPid), "-d", "cwd", "-Fn"], { encoding: "utf8" });
-      cwd = out.split("\n").find((l) => l.startsWith("n"))?.slice(1) ?? null;
-    } catch {}
-    listeners.push({ pid: listenerPid, ports: [...ports].sort((a, b) => a - b), cwd });
-  }
-  return listeners;
-}
+export { nodeListeners };
 
 function devRange(repo) {
   return [Math.min(repo.mainPort, repo.portRange[0]), repo.portRange[1]];
@@ -60,15 +32,6 @@ export function serverFor(worktreePath, listeners, worktrees, repo) {
   return { pid: match.pid, port: devPortOf(match, repo) };
 }
 
-function portInUse(port) {
-  try {
-    execFileSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function startServer(repo, worktreePath, worktrees) {
   const appDir = path.join(worktreePath, repo.appDir);
   if (!existsSync(appDir)) return;
@@ -79,7 +42,7 @@ export function startServer(repo, worktreePath, worktrees) {
 
   const nodeModules = path.join(appDir, "node_modules");
   const mainNodeModules = path.join(repo.path, repo.appDir, "node_modules");
-  if (!existsSync(nodeModules) && existsSync(mainNodeModules)) symlinkSync(mainNodeModules, nodeModules);
+  if (!existsSync(nodeModules) && existsSync(mainNodeModules)) symlinkDir(mainNodeModules, nodeModules);
 
   if (serverFor(worktreePath, nodeListeners(), worktrees, repo)) return;
 
@@ -108,9 +71,7 @@ export function stopServer(repo, worktreePath, worktrees) {
     if (!listener.cwd || devPortOf(listener, repo) === null) continue;
     if (owningWorktree(listener.cwd, worktrees)?.path !== worktreePath) continue;
     if (isMain && listener.cwd.startsWith(claudeDir)) continue;
-    try {
-      process.kill(listener.pid);
-    } catch {}
+    killTree(listener.pid);
   }
 }
 
@@ -120,11 +81,7 @@ export function reapOrphans(listeners, reposWithWorktrees) {
     for (const listener of listeners) {
       if (!listener.cwd?.startsWith(worktreesDir)) continue;
       const owned = worktrees.some((wt) => listener.cwd === wt.path || listener.cwd.startsWith(`${wt.path}/`));
-      if (!owned) {
-        try {
-          process.kill(listener.pid);
-        } catch {}
-      }
+      if (!owned) killTree(listener.pid);
     }
   }
 }
