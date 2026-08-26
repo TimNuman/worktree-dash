@@ -62,7 +62,9 @@ export const page = `<!doctype html>
   button:hover { background: light-dark(#e4e4e7, #3a3a42); }
   button:disabled { opacity: 0.5; cursor: default; }
   button.mini { font-size: 0.72rem; padding: 0.15rem 0.5rem; }
+  .foot { display: flex; align-items: center; gap: 0.5rem; }
   .procs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .actions { display: flex; gap: 0.4rem; margin-left: auto; }
   .proc {
     display: inline-flex;
     align-items: center;
@@ -116,7 +118,7 @@ function procChip(proc) {
   );
 }
 
-function worktreeItem(row) {
+function worktreeItem(row, actions) {
   const link = row.port
     ? '<a href="http://localhost:' + row.port + '" target="_blank">localhost:' + row.port + "</a>"
     : '<span class="noport">no server</span>';
@@ -126,13 +128,17 @@ function worktreeItem(row) {
     ? "<button disabled>…</button>"
     : '<button data-action="' + (row.up ? "stop" : "start") + '">' + (row.up ? "stop" : "start") + "</button>";
   const procs = row.processes.length ? '<div class="procs">' + row.processes.map(procChip).join("") + "</div>" : "";
+  const actionButtons = actions.length
+    ? '<div class="actions">' + actions.map((a) => '<button class="mini" data-run="' + esc(a) + '">' + esc(a) + "</button>").join("") + "</div>"
+    : "";
+  const foot = procs || actionButtons ? '<div class="foot">' + procs + actionButtons + "</div>" : "";
   return (
     '<li data-path="' + esc(row.path) + '">' +
     '<div class="row"><span class="dot ' + (row.up ? "up" : "down") + '"></span>' +
     '<div class="info"><div class="top"><span class="branch">' + esc(row.branch) + "</span>" + name + "</div>" +
     commitLine(row) + "</div>" + link +
     '<button class="mini" data-log="dev">output</button>' + button + "</div>" +
-    procs + '<pre class="log" hidden></pre></li>'
+    foot + '<pre class="log" hidden></pre></li>'
   );
 }
 
@@ -153,7 +159,7 @@ function render(data) {
     .map((repo) =>
       '<section data-repo="' + esc(repo.path) + '">' +
       "<h1>" + esc(repo.name) + "</h1>" +
-      "<ul>" + repo.worktrees.map(worktreeItem).join("") + "</ul>" +
+      "<ul>" + repo.worktrees.map((wt) => worktreeItem(wt, repo.actions)).join("") + "</ul>" +
       "<h2>Branches</h2>" +
       "<ul>" + repo.branches.map(branchItem).join("") + "</ul>" +
       "</section>",
@@ -222,6 +228,14 @@ document.getElementById("root").addEventListener("click", (event) => {
   const repo = button.closest("section").dataset.repo;
   const item = button.closest("li");
 
+  if (button.dataset.run) {
+    button.disabled = true;
+    fetch("/action", {
+      method: "POST",
+      body: JSON.stringify({ action: "run", repo, path: item.dataset.path, name: button.dataset.run }),
+    }).finally(() => setTimeout(() => (button.disabled = false), 1000));
+    return;
+  }
   if (button.dataset.log) {
     const path = item.dataset.path;
     const open = openLogs.get(path);

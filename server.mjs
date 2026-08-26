@@ -2,7 +2,7 @@ import http from "node:http";
 import path from "node:path";
 import { checkout, lastCommit, listBranches, listWorktrees } from "./git.mjs";
 import { nodeListeners, reapOrphans, serverFor, startServer, stopServer } from "./servers.mjs";
-import { processStatuses, psSnapshot, readLogTail, startProcess, stopProcess } from "./processes.mjs";
+import { processStatuses, psSnapshot, readLogTail, runAction, startProcess, stopProcess } from "./processes.mjs";
 import { page } from "./page.mjs";
 
 function collect(config) {
@@ -14,6 +14,7 @@ function collect(config) {
   return reposWithWorktrees.map(({ repo, worktrees }) => ({
     name: path.basename(repo.path),
     path: repo.path,
+    actions: repo.actions.map((action) => action.name),
     worktrees: worktrees.map((wt) => {
       const isMain = wt.path === repo.path;
       const server = serverFor(wt.path, listeners, worktrees, repo);
@@ -66,6 +67,12 @@ function handleAction(config, req, res) {
     }
     if (action === "stop") {
       stopServer(repo, worktreePath, worktrees);
+      return respond(200, {});
+    }
+    if (action === "run") {
+      const oneOff = repo.actions.find((a) => a.name === name);
+      if (!oneOff) return respond(400, { error: "unknown action" });
+      runAction(repo, worktreePath, oneOff);
       return respond(200, {});
     }
     if (action === "proc-start" || action === "proc-stop") {

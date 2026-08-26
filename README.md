@@ -43,11 +43,16 @@ worktree-dash status     # print the dev server + processes for the worktree you
       "processes": [
         { "name": "tsc", "command": "npx tsc --watch --noEmit --preserveWatchOutput", "autostart": false },
         { "name": "tests", "command": "npm run test:watch", "autostart": true }
+      ],
+      "actions": [
+        { "name": "code", "command": "code ." }
       ]
     }
   ]
 }
 ```
+
+`actions` are one-off commands (open an editor, run a script) rendered as a button per worktree; they run detached in the **worktree root** — unlike `processes`, which are tracked watchers running in `appDir`.
 
 - `appDir` — folder (relative to the repo root) where the dev server runs; defaults to the repo root.
 - `mainPort` — preferred port for the main checkout; worktrees get the first free port in `portRange`.

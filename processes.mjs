@@ -109,6 +109,17 @@ export function startProcess(repo, worktreePath, proc) {
   registry.set(registryKey(worktreePath, proc.name), child.pid);
 }
 
+export function runAction(repo, worktreePath, action) {
+  const log = openLog(repo, worktreePath, `action-${action.name}`);
+  const child = spawn(action.command, {
+    cwd: worktreePath,
+    shell: true,
+    detached: true,
+    stdio: ["ignore", log, log],
+  });
+  child.unref();
+}
+
 export function stopProcess(repo, worktreePath, proc) {
   const pid = findPid(repo, worktreePath, proc);
   if (!pid) return;

@@ -10,7 +10,7 @@ Zero-dependency Node CLI serving a dashboard on localhost:2999 (default). No bui
 ## Module map
 
 - `bin.mjs` — entry. `worktree-dash` serves; `worktree-dash status` prints dev-server/watcher state for the worktree containing cwd (standalone, no server needed — made for agent hooks).
-- `config.mjs` — loads `~/.config/worktree-dash.json`; falls back to the git repo at cwd. Normalizes repos: `path`, `appDir`, `mainPort` (3000), `portRange` ([3001, 3099]), `startCommand`, `processes[]` ({name, command, autostart}).
+- `config.mjs` — loads `~/.config/worktree-dash.json`; falls back to the git repo at cwd. Normalizes repos: `path`, `appDir`, `mainPort` (3000), `portRange` ([3001, 3099]), `startCommand`, `processes[]` ({name, command, autostart} — tracked watchers, run in appDir), `actions[]` ({name, command} — one-off buttons, run detached in the worktree ROOT, e.g. `code .`).
 - `git.mjs` — worktrees (`worktree list --porcelain`), last commits, branch list with ahead/behind vs `baseRef()` (origin/HEAD, falls back main/master), checkout.
 - `servers.mjs` — dev servers: lsof discovery, start (env copy + node_modules symlink + port pick + detached spawn), stop, orphan reaping.
 - `processes.mjs` — configured background watchers: pid registry + ps discovery, group kill, log files (`~/.cache/worktree-dash/logs/<repo>-<worktree>-<name>.log`; dev server logs as name `dev`), `readLogTail` (ANSI-stripped).

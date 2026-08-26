@@ -21,6 +21,10 @@ function normalizeRepo(repo) {
       command: proc.command,
       autostart: proc.autostart ?? false,
     })),
+    actions: (repo.actions ?? []).map((action) => ({
+      name: action.name ?? action.command,
+      command: action.command,
+    })),
   };
 }
 
