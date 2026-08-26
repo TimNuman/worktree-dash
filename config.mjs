@@ -16,6 +16,11 @@ function normalizeRepo(repo) {
     mainPort: repo.mainPort ?? 3000,
     portRange: repo.portRange ?? [3001, 3099],
     startCommand: repo.startCommand ?? "npm run start",
+    processes: (repo.processes ?? []).map((proc) => ({
+      name: proc.name ?? proc.command,
+      command: proc.command,
+      autostart: proc.autostart ?? false,
+    })),
   };
 }
 

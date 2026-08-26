@@ -1,9 +1,7 @@
 import { execFileSync, spawn } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, openSync, symlinkSync } from "node:fs";
-import { homedir } from "node:os";
+import { copyFileSync, existsSync, symlinkSync } from "node:fs";
 import path from "node:path";
-
-const LOG_DIR = path.join(homedir(), ".cache", "worktree-dash", "logs");
+import { openLog } from "./processes.mjs";
 
 export function nodeListeners() {
   let out = "";
@@ -92,9 +90,7 @@ export function startServer(repo, worktreePath, worktrees) {
   const port = candidates.find((p) => !portInUse(p));
   if (!port) return;
 
-  mkdirSync(LOG_DIR, { recursive: true });
-  const logName = `${path.basename(repo.path)}-${path.basename(worktreePath)}.log`;
-  const log = openSync(path.join(LOG_DIR, logName), "a");
+  const log = openLog(repo, worktreePath, "dev");
   const child = spawn(repo.startCommand, {
     cwd: appDir,
     shell: true,

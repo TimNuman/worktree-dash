@@ -2,6 +2,8 @@
 
 Local dashboard for git worktrees on `http://localhost:2999`: every worktree with its branch, last commit, and dev server (port, liveness, start/stop), plus all other local branches with ahead/behind counts against the default branch and a one-click checkout into the main folder.
 
+Each repo can declare extra background processes (watchers like `npx tsc --watch` or `npm run test:watch`) that get per-worktree start/stop chips; `autostart: true` brings a process up together with the worktree's dev server. Every process the dash starts — the dev server included — logs to a file, and an **output** button shows the live tail in an expandable panel.
+
 Dev servers are discovered live via `lsof` — node processes listening on a dev port, matched to worktrees by working directory. No state files. Servers whose worktree has been deleted are killed automatically.
 
 Zero dependencies. macOS (relies on `lsof`).
@@ -19,7 +21,10 @@ npm link
 ```sh
 worktree-dash            # uses ~/.config/worktree-dash.json, or the git repo you're in
 worktree-dash --port 4000
+worktree-dash status     # print the dev server + processes for the worktree you're in
 ```
+
+`worktree-dash status` is made for tooling: hook it into your AI agent's session start so it knows a type-check or test watcher is already running (and where its log lives) instead of launching its own.
 
 ## Config
 
@@ -34,7 +39,11 @@ worktree-dash --port 4000
       "appDir": "apps/web",
       "mainPort": 3000,
       "portRange": [3001, 3099],
-      "startCommand": "npm run start"
+      "startCommand": "npm run start",
+      "processes": [
+        { "name": "tsc", "command": "npx tsc --watch --noEmit --preserveWatchOutput", "autostart": false },
+        { "name": "tests", "command": "npm run test:watch", "autostart": true }
+      ]
     }
   ]
 }
