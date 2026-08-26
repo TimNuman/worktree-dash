@@ -54,3 +54,17 @@ worktree-dash status     # print the dev server + processes for the worktree you
 - `startCommand` — run with `PORT` set, detached; logs land in `~/.cache/worktree-dash/logs/`.
 
 Starting a worktree server also copies `appDir/.env.example` to `.env` if missing and symlinks the main checkout's `node_modules` into the worktree. Multiple repos each get their own section on the page.
+
+## Claude Code skill
+
+The repo ships a Claude Code skill (`.claude/skills/worktree-dash/`) describing the architecture, the discovery model's invariants, and the `/action` + `status` API contract. Inside this repo it loads automatically; to use it elsewhere:
+
+```sh
+# globally, for every Claude session (symlink stays in sync with git pull)
+ln -s "$(pwd)/.claude/skills/worktree-dash" ~/.claude/skills/worktree-dash
+
+# or copy into one specific repo
+cp -R .claude/skills/worktree-dash /path/to/other-repo/.claude/skills/
+```
+
+The global install is the useful one: sessions in repos whose hooks call the dashboard's API get the integration contract without cloning anything into those repos.
