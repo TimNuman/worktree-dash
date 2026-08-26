@@ -1,0 +1,14 @@
+{
+  "name": "worktree-dash",
+  "version": "0.1.0",
+  "description": "Local dashboard for git worktrees: dev servers, branches, one-click start/stop/checkout",
+  "type": "module",
+  "bin": {
+    "worktree-dash": "./bin.mjs"
+  },
+  "repository": "github:TimNuman/worktree-dash",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
